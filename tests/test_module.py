@@ -6,59 +6,50 @@ import json
 import pytest
 from mock import patch
 from jsonschema.exceptions import ValidationError
-from message_adapter import aws, message_adapter
+from message_adapter import message_adapter
 
 
 class TestMessageAdapter:  # pylint: disable=too-many-public-methods
-    # pylint: disable=no-member, protected-access
+    # pylint: disable=attribute-defined-outside-init, no-member, protected-access
     """ Test class """
 
-    s3_object = {'input': ':blue_whale:'}
-    config_s3_object = {'task_config': 'bad value', 'input': ':blue_whale:'}
-    bucket_name = 'testing-internal'
-    key_name = 'blue_whale-event.json'
-    config_key_name = 'cma_config_blue_whale-event.json'
-    event_with_cma = {'cma': {'foo': 'bar', 'event': {'some': 'object'}}}
-    event_with_replace = {'replace': {'Bucket': bucket_name, 'Key': key_name, 'TargetPath': '$'}}
-    config_event_with_replace = {
-        'cma':
-            {
-                'task_config': 'foo_bar',
-                'event': {
-                    'replace': {'Bucket': bucket_name, 'Key': config_key_name, 'TargetPath': '$'}
-                }
-            }
-    }
-    event_without_replace = {'input': ':baby_whale:'}
-    test_uuid = 'aad93279-95d4-4ada-8c43-aa5823f8bbbc'
-    next_event_object_key_name = f'events/{test_uuid}'
-    s3 = aws.s3()
-    cumulus_message_adapter = message_adapter.MessageAdapter()
-    test_folder = os.path.join(os.getcwd(), 'examples/messages')
-    context_folder = os.path.join(os.getcwd(), 'examples/contexts')
-    schemas_folder = os.path.join(os.getcwd(), 'examples/schemas')
-    os.environ["LAMBDA_TASK_ROOT"] = os.path.join(os.getcwd(), 'examples')
+    @pytest.fixture(autouse=True)
+    def _setup(self, s3, bucket_name, key_name, config_key_name, s3_object, config_s3_object,
+               test_uuid, next_event_object_key_name, nested_response, event_with_replace,
+               config_event_with_replace, event_without_replace, event_with_cma,
+               cumulus_message_adapter, test_folder, context_folder, schemas_folder):
+        """Set up S3 state before each test and expose all fixtures as instance attributes."""
+        self.s3 = s3
+        self.bucket_name = bucket_name
+        self.key_name = key_name
+        self.config_key_name = config_key_name
+        self.s3_object = s3_object
+        self.config_s3_object = config_s3_object
+        self.test_uuid = test_uuid
+        self.next_event_object_key_name = next_event_object_key_name
+        self.nested_response = nested_response
+        self.event_with_replace = event_with_replace
+        self.config_event_with_replace = config_event_with_replace
+        self.event_without_replace = event_without_replace
+        self.event_with_cma = event_with_cma
+        self.cumulus_message_adapter = cumulus_message_adapter
+        self.test_folder = test_folder
+        self.context_folder = context_folder
+        self.schemas_folder = schemas_folder
 
-    def setup_method(self):
-        self.nested_response = {
-            'input': {
-                'dataLocation': 's3://source.jpg'
-            }
-        }
+        s3.Bucket(bucket_name).create()
+        s3.Object(bucket_name, key_name).put(Body=json.dumps(s3_object))
+        s3.Object(bucket_name, config_key_name).put(Body=json.dumps(config_s3_object))
 
-        self.s3.Bucket(self.bucket_name).create()
-        self.s3.Object(self.bucket_name, self.key_name).put(Body=json.dumps(self.s3_object))
-        self.s3.Object(self.bucket_name, self.config_key_name).put(
-            Body=json.dumps(self.config_s3_object)
-        )
+        yield
 
-    def teardown_method(self):
         delete_objects_object = {
-            'Objects': [{'Key': self.key_name}, {'Key': self.next_event_object_key_name},
-                        {'Key': self.config_key_name}]
+            'Objects': [{'Key': key_name}, {'Key': next_event_object_key_name},
+                        {'Key': config_key_name}]
         }
-        self.s3.Bucket(self.bucket_name).delete_objects(Delete=delete_objects_object)
-        self.s3.Bucket(self.bucket_name).delete()
+        s3.Bucket(bucket_name).delete_objects(Delete=delete_objects_object)
+        s3.Bucket(bucket_name).delete()
+
     # load_and_update_remote_event tests
 
     def test_returns_remote_s3_object(self):

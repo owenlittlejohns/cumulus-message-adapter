@@ -6,22 +6,23 @@ import os
 import subprocess
 import pytest
 
-from message_adapter import aws
-
 
 class TestProgram:
     # pylint: disable=attribute-defined-outside-init
     # pylint: disable=too-many-locals
 
     """ Test class """
-    test_folder = os.path.join(os.getcwd(), 'examples/messages')
-    os.environ["LAMBDA_TASK_ROOT"] = os.path.join(os.getcwd(), 'examples')
+
+    @pytest.fixture(autouse=True)
+    def _setup(self, test_folder, s3):
+        """Expose shared fixtures as instance attributes for use in test helper methods."""
+        self.test_folder = test_folder
+        self.s3 = s3
 
     def place_remote_message(self, in_msg):
         """
         Place the remote message on S3 before test
         """
-        self.s3 = aws.s3()  # pylint: disable=invalid-name
         bucket_name = in_msg['replace']['Bucket']
         key_name = in_msg['replace']['Key']
         data_filename = os.path.join(self.test_folder, key_name)

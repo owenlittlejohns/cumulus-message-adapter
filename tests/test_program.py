@@ -4,12 +4,12 @@ Tests for cumulus-message-adapter command-line interface
 import json
 import os
 import subprocess
-import unittest
+import pytest
 
 from message_adapter import aws
 
 
-class Test(unittest.TestCase):
+class TestProgram:
     # pylint: disable=attribute-defined-outside-init
     # pylint: disable=too-many-locals
 
@@ -56,7 +56,7 @@ class Test(unittest.TestCase):
     @staticmethod
     def read_streaming_output(stream_process):
         """
-        Given a subprocess, read stdout from that process until <EOC> line recieved
+        Given a subprocess, read stdout from that process until <EOC> line received
         """
         proc_stdout = stream_process.stdout
         buffer = ''
@@ -245,11 +245,8 @@ class Test(unittest.TestCase):
 
     def test_validation_failure_case(self):
         """ test validation failure case """
-        try:
+        with pytest.raises(AssertionError):
             self.transform_messages({'testcase': 'invalidinput'})
-        except AssertionError:
-            return
-        assert False
 
     def test_workflow_task_meta(self):
         """ test meta.workflow task """

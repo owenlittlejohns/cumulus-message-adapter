@@ -3,13 +3,13 @@ Tests for cumulus-message-adapter
 """
 import os
 import json
-import unittest
+import pytest
 from mock import patch
 from jsonschema.exceptions import ValidationError
 from message_adapter import aws, message_adapter
 
 
-class Test(unittest.TestCase):  # pylint: disable=too-many-public-methods
+class TestMessageAdapter:  # pylint: disable=too-many-public-methods
     # pylint: disable=no-member, protected-access
     """ Test class """
 
@@ -39,7 +39,7 @@ class Test(unittest.TestCase):  # pylint: disable=too-many-public-methods
     schemas_folder = os.path.join(os.getcwd(), 'examples/schemas')
     os.environ["LAMBDA_TASK_ROOT"] = os.path.join(os.getcwd(), 'examples')
 
-    def setUp(self):
+    def setup_method(self):
         self.nested_response = {
             'input': {
                 'dataLocation': 's3://source.jpg'
@@ -52,7 +52,7 @@ class Test(unittest.TestCase):  # pylint: disable=too-many-public-methods
             Body=json.dumps(self.config_s3_object)
         )
 
-    def tearDown(self):
+    def teardown_method(self):
         delete_objects_object = {
             'Objects': [{'Key': self.key_name}, {'Key': self.next_event_object_key_name},
                         {'Key': self.config_key_name}]
@@ -78,7 +78,7 @@ class Test(unittest.TestCase):  # pylint: disable=too-many-public-methods
         result = self.cumulus_message_adapter.load_and_update_remote_event(
             self.event_with_cma, None)
         expected = {'foo': 'bar', 'some': 'object'}
-        self.assertEqual(expected, result)
+        assert expected == result
 
     def test_load_and_update_remote_event_does_not_overwrite_configuration(self):
         """ Test incoming event with configuration is not overwritten by key in remote event """
@@ -87,7 +87,7 @@ class Test(unittest.TestCase):  # pylint: disable=too-many-public-methods
         expected = {'task_config': self.config_event_with_replace['cma']['task_config'],
                     'input': ':blue_whale:',
                     'replace': self.config_event_with_replace['cma']['event']['replace']}
-        self.assertEqual(expected, result)
+        assert expected == result
 
 
     # load_nested_event task_config tests
@@ -259,8 +259,8 @@ class Test(unittest.TestCase):  # pylint: disable=too-many-public-methods
         remote_event_object = json.loads(
             remote_event['Body'].read().decode('utf-8'))
 
-        self.assertEqual(remote_event_object, expected_remote_event_object)
-        self.assertEqual(create_next_event_result, expected_create_next_event_result)
+        assert remote_event_object == expected_remote_event_object
+        assert create_next_event_result == expected_create_next_event_result
 
     @patch('uuid.uuid4')
     def test_configured_big_result_with_non_dict_target_stored_remotely(self, uuid_mock):
@@ -309,8 +309,8 @@ class Test(unittest.TestCase):  # pylint: disable=too-many-public-methods
         remote_event_object = json.loads(
             remote_event['Body'].read().decode('utf-8'))
 
-        self.assertEqual(remote_event_object, expected_remote_event_object)
-        self.assertEqual(create_next_event_result, expected_create_next_event_result)
+        assert remote_event_object == expected_remote_event_object
+        assert create_next_event_result == expected_create_next_event_result
 
     @patch('uuid.uuid4')
     def test_big_result_stored_remotely(self, uuid_mock):
@@ -354,8 +354,8 @@ class Test(unittest.TestCase):  # pylint: disable=too-many-public-methods
         remote_event_object = json.loads(
             remote_event['Body'].read().decode('utf-8'))
 
-        self.assertEqual(remote_event_object, expected_remote_event_object)
-        self.assertEqual(create_next_event_result, expected_create_next_event_result)
+        assert remote_event_object == expected_remote_event_object
+        assert create_next_event_result == expected_create_next_event_result
 
     def test_basic(self):
         """ test basic.input.json """
@@ -479,7 +479,7 @@ class Test(unittest.TestCase):  # pylint: disable=too-many-public-methods
         delete_objects_object = {'Objects': [{'Key': key_name}]}
         self.s3.Bucket(bucket_name).delete_objects(Delete=delete_objects_object)
         self.s3.Bucket(bucket_name).delete()
-        self.assertEqual(result, out_msg)
+        assert result == out_msg
 
     def test_non_object_configured_remote(self):
         """ test_non_object_configured_remote.input.json """
@@ -518,7 +518,7 @@ class Test(unittest.TestCase):  # pylint: disable=too-many-public-methods
         delete_objects_object = {'Objects': [{'Key': key_name}]}
         self.s3.Bucket(bucket_name).delete_objects(Delete=delete_objects_object)
         self.s3.Bucket(bucket_name).delete()
-        self.assertEqual(result, out_msg)
+        assert result == out_msg
 
     def test_sfn(self):
         """ test sfn.input.json """
@@ -610,10 +610,9 @@ class Test(unittest.TestCase):  # pylint: disable=too-many-public-methods
         adapter = message_adapter.MessageAdapter(schemas)
         in_msg = json.loads(inp.read())
         in_msg["payload"] = {"hello": 1}
-        try:
+        with pytest.raises(ValidationError) as exc_info:
             adapter.load_nested_event(in_msg)
-        except ValidationError as e:
-            assert e.message == "input schema: 1 is not of type u'string'"
+        assert exc_info.value.message == "input schema: 1 is not of type u'string'"
 
     def test_config_jsonschema(self):
         """ test a working config schema """
@@ -632,10 +631,9 @@ class Test(unittest.TestCase):  # pylint: disable=too-many-public-methods
         in_msg = json.loads(inp.read())
         in_msg["task_config"]["boolean_option"] = '{$.meta.boolean_option}'
         in_msg["meta"]["boolean_option"] = "notgoingtowork"
-        try:
+        with pytest.raises(ValidationError) as exc_info:
             adapter.load_nested_event(in_msg)
-        except ValidationError as e:
-            assert e.message == "config schema: 'notgoingtowork' is not of type u'boolean'"
+        assert exc_info.value.message == "config schema: 'notgoingtowork' is not of type u'boolean'"
 
     def test_output_jsonschema(self):
         """ test a working output schema """
@@ -656,9 +654,8 @@ class Test(unittest.TestCase):  # pylint: disable=too-many-public-methods
         adapter = message_adapter.MessageAdapter(schemas)
         in_msg = json.loads(inp.read())
         msg = adapter.load_nested_event(in_msg)
-        messageConfig = msg.get('messageConfig')
+        message_config = msg.get('messageConfig')
         handler_response = {"goodbye": 1}
-        try:
-            adapter.create_next_event(handler_response, in_msg, messageConfig,)
-        except ValidationError as e:
-            assert e.message == "output schema: 1 is not of type u'string'"
+        with pytest.raises(ValidationError) as exc_info:
+            adapter.create_next_event(handler_response, in_msg, message_config)
+        assert exc_info.value.message == "output schema: 1 is not of type u'string'"

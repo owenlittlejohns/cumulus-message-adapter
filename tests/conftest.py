@@ -1,6 +1,7 @@
 """
 Shared pytest fixtures for cumulus-message-adapter tests.
 """
+import json
 import os
 import pytest
 from message_adapter import aws, message_adapter
@@ -119,3 +120,21 @@ def config_event_with_replace(bucket_name, config_key_name):
 def event_without_replace():
     """Simple event without a 'replace' key."""
     return {'input': ':baby_whale:'}
+
+
+@pytest.fixture
+def s3_bucket_setup(s3, bucket_name, key_name, config_key_name, s3_object, config_s3_object,
+                    next_event_object_key_name):
+    """Create the testing-internal S3 bucket with standard test objects; tear down after each test."""
+    s3.Bucket(bucket_name).create()
+    s3.Object(bucket_name, key_name).put(Body=json.dumps(s3_object))
+    s3.Object(bucket_name, config_key_name).put(Body=json.dumps(config_s3_object))
+
+    yield
+
+    delete_objects_object = {
+        'Objects': [{'Key': key_name}, {'Key': next_event_object_key_name},
+                    {'Key': config_key_name}]
+    }
+    s3.Bucket(bucket_name).delete_objects(Delete=delete_objects_object)
+    s3.Bucket(bucket_name).delete()

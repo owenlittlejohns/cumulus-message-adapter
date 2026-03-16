@@ -1,0 +1,66 @@
+[project]
+name = "cumulus-message-adapter"
+version = "2.0.5"
+description = "A command-line interface for preparing and outputting Cumulus Messages for Cumulus Tasks"
+readme = "README.md"
+license = { file = "LICENCE" }
+authors = [{ name = "Cumulus Authors", email = "info@developmentseed.org" }]
+requires-python = "~=3.12"
+
+[project.urls]
+homepage = "https://github.com/nasa/cumulus-message-adapter"
+documentation = "https://github.com/nasa/cumulus-message-adapter/blob/master/README.md"
+repository = "https://github.com/nasa/cumulus-message-adapter"
+
+[tool.ruff]
+exclude = ["setup.py"]
+
+[tool.ruff.lint]
+# https://docs.astral.sh/ruff/rules/
+select = [
+  # pycodestyle errors, ignore lints that are covered by the ruff formatter
+  "E4", "E7", "E9",
+  # line-too-long - the formatter doesn't always fix these
+  "E501",
+  # Pyflakes
+  "F",
+  # isort
+  "I",
+  # pylint
+  "PL",
+  # pyupgrade
+  "UP",
+  # bandit
+  "S",
+  # pep8-naming
+  "N",
+  # pydoclint
+  "DOC",
+  # pydocstyle
+  "D",
+]
+
+ignore = [
+  # undocumented-magic-method
+  "D105",
+  # blank-line-after-function
+  "D202",
+  # incorrect-blank-line-before-class - incompatible with D211
+  "D203",
+  # missing-blank-line-after-summary - false positives
+  "D205",
+  # multi-line-summary-second-line - incompatible with D212
+  "D213",
+  # error-suffix-on-exception-name
+  "N818",
+  # assert
+  "S101",
+  # start-process-with-partial-path
+  "S607",
+  # logging-too-many-args - false positives
+  "PLE1205",
+]
+
+[tool.ruff.lint.per-file-ignores]
+# Ignore missing docstring rules for non-exported python code
+"tests/*.py" = ["D1", "D4", "PLR0913", "PLR2004", "N806", "S603", "E501"]

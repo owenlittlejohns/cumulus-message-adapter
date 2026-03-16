@@ -48,7 +48,7 @@ class Test(unittest.TestCase):
 
     @staticmethod
     def read_streaming_output(stream_process):
-        """Given a subprocess, read stdout from that process until <EOC> line recieved"""
+        """Given a subprocess, read stdout from that process until <EOC> line received"""
         proc_stdout = stream_process.stdout
         buffer = ""
         itercount = 0

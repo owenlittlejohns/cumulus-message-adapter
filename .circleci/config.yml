@@ -51,7 +51,7 @@ jobs:
           command: |
             . ~/venv312/bin/activate
             python -m pylint --rcfile=.pylintrc -j 0 __main__.py ./message_adapter/
-            CUMULUS_ENV=testing nose2 -v
+            CUMULUS_ENV=testing pytest -v tests/
 
   publish_github:
     <<: *container_lambda_python312

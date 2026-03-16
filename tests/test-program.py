@@ -69,9 +69,8 @@ class Test(unittest.TestCase):
     @staticmethod
     def write_streaming_input(command, proc_input, p_stdin):
         """Given a stdin pipe for a subprocess, write command/proc input to CMA subprocess"""
-        p_stdin.write((command + "\n").encode("utf-8"))
-        p_stdin.write(json.dumps(proc_input).encode("utf-8"))
-        p_stdin.write(b"\n")
+        p_stdin.write(f"{command}\n".encode())
+        p_stdin.write(f"{json.dumps(proc_input)}\n".encode())
         p_stdin.write(b"<EOC>\n")
         p_stdin.flush()
 

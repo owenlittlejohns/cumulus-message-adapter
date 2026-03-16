@@ -1,0 +1,1 @@
+Use the prompts specified in the AGENTS.md file and the files located under the instructions folder to maintain a well documented, stable, and clean application repository following the laid out guidance.
